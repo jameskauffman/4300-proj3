@@ -138,7 +138,23 @@ class DigitClassificationModel(object):
     """
     def __init__(self):
         # Initialize your model parameters here
-        "*** YOUR CODE HERE ***"
+        self.batch_size = 200
+        self.learning_rate = 0.1
+        self.h1 = 400
+        self.h2 = 200
+
+        #input to hidden1
+        self.W1 = nn.Parameter(784, self.h1)
+        self.b1 = nn.Parameter(1, self.h1)
+
+        #hidden1 to hidden2
+        self.W2 = nn.Parameter(self.h1, self.h2)
+        self.b2 = nn.Parameter(1, self.h2)
+
+        #hidden2 to output
+        self.W3 = nn.Parameter(self.h2, 10)
+        self.b3 = nn.Parameter(1, 10)
+
 
     def run(self, x):
         """
@@ -154,7 +170,10 @@ class DigitClassificationModel(object):
             A node with shape (batch_size x 10) containing predicted scores
                 (also called logits)
         """
-        "*** YOUR CODE HERE ***"
+        h1 = nn.ReLU(nn.AddBias(nn.Linear(x, self.W1), self.b1))
+        h2 = nn.ReLU(nn.AddBias(nn.Linear(h1, self.W2), self.b2))
+        logits = nn.AddBias(nn.Linear(h2, self.W3), self.b3) 
+        return logits
 
     def get_loss(self, x, y):
         """
@@ -169,13 +188,37 @@ class DigitClassificationModel(object):
             y: a node with shape (batch_size x 10)
         Returns: a loss node
         """
-        "*** YOUR CODE HERE ***"
+        return nn.SoftmaxLoss(self.run(x), y)
 
     def train(self, dataset):
         """
         Trains the model.
         """
-        "*** YOUR CODE HERE ***"
+        best_val = 0.0
+        patience = 2 #limit for how many epochs without improvement
+        bad = 0 #counts the number of epochs without improvement
+
+        for epoch in range(15):
+            for x, y in dataset.iterate_once(self.batch_size):
+                loss = self.get_loss(x, y)
+                gW1, gB1, gW2, gB2, gW3, gB3 = nn.gradients(
+                    loss, [self.W1, self.b1, self.W2, self.b2, self.W3, self.b3]
+                )
+                self.W1.update(gW1, -self.learning_rate)
+                self.b1.update(gB1, -self.learning_rate)
+                self.W2.update(gW2, -self.learning_rate)
+                self.b2.update(gB2, -self.learning_rate)
+                self.W3.update(gW3, -self.learning_rate)
+                self.b3.update(gB3, -self.learning_rate)
+
+            val_acc = dataset.get_validation_accuracy()
+            if val_acc > best_val:
+                best_val = val_acc
+                bad = 0
+            else:
+                bad += 1
+                if bad >= patience:
+                    break
 
 class LanguageIDModel(object):
     """
