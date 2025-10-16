@@ -238,6 +238,26 @@ class LanguageIDModel(object):
 
         # Initialize your model parameters here
         "*** YOUR CODE HERE ***"
+        self.batch_size = 200
+        self.learning_rate = 0.1
+        self.h = 400
+        self.h2 = 200
+
+        #input to hidden1
+        self.W1 = nn.Parameter(self.num_chars, self.h)
+
+        #hidden1 to hidden2
+        self.W2 = nn.Parameter(self.h, self.h)
+        self.b2 = nn.Parameter(1, self.h)
+        #hidden3 to hidden4
+        self.W3 = nn.Parameter(self.h, self.h2)
+        self.b3 = nn.Parameter(1, self.h2)
+        
+        #hidden4 to output
+        self.W4 = nn.Parameter(self.h2, 5)
+        self.b4 = nn.Parameter(1, 5)
+
+        
 
     def run(self, xs):
         """
@@ -269,6 +289,21 @@ class LanguageIDModel(object):
                 (also called logits)
         """
         "*** YOUR CODE HERE ***"
+        h1 = nn.ReLU(nn.AddBias(nn.Linear(xs[0], self.W1), self.b2))
+        for x in xs[1:]:
+            h2 = nn.ReLU(
+                    nn.AddBias(
+                        nn.Add(
+                            nn.Linear(x, self.W1),
+                            nn.Linear(h2, self.W2)
+                            ) 
+                    ,self.b2)
+            )
+                
+        h3 = nn.ReLU(nn.AddBias(nn.Linear(h2, self.W3), self.b3))
+        logits = nn.AddBias(nn.Linear(h3, self.W4), self.b4)
+        return logits
+
 
     def get_loss(self, xs, y):
         """
@@ -285,9 +320,24 @@ class LanguageIDModel(object):
         Returns: a loss node
         """
         "*** YOUR CODE HERE ***"
+        return nn.SoftmaxLoss(self.run(xs), y)
 
     def train(self, dataset):
         """
         Trains the model.
         """
         "*** YOUR CODE HERE ***"
+        for epoch in range(10):
+            for x, y in dataset.iterate_once(self.batch_size):
+                loss = self.get_loss(x, y)
+                gW1, gW2, gB2, gW3, gB3, gW4, gB4 = nn.gradients(
+                    loss, [self.W1, self.W2, self.b2, self.W3, self.b3, self.W4, self.b4]
+                )
+                self.W1.update(gW1, -self.learning_rate)
+                self.W2.update(gW2, -self.learning_rate)
+                self.b2.update(gB2, -self.learning_rate)
+                self.W3.update(gW3, -self.learning_rate)
+                self.b3.update(gB3, -self.learning_rate)
+                self.W4.update(gW4, -self.learning_rate)
+                self.b4.update(gB4, -self.learning_rate)
+
