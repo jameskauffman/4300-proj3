@@ -289,18 +289,18 @@ class LanguageIDModel(object):
                 (also called logits)
         """
         "*** YOUR CODE HERE ***"
-        h1 = nn.ReLU(nn.AddBias(nn.Linear(xs[0], self.W1), self.b2))
+        h = nn.ReLU(nn.AddBias(nn.Linear(xs[0], self.W1), self.b2))
         for x in xs[1:]:
-            h2 = nn.ReLU(
+            h = nn.ReLU(
                     nn.AddBias(
                         nn.Add(
                             nn.Linear(x, self.W1),
-                            nn.Linear(h2, self.W2)
+                            nn.Linear(h, self.W2)
                             ) 
                     ,self.b2)
             )
                 
-        h3 = nn.ReLU(nn.AddBias(nn.Linear(h2, self.W3), self.b3))
+        h3 = nn.ReLU(nn.AddBias(nn.Linear(h, self.W3), self.b3))
         logits = nn.AddBias(nn.Linear(h3, self.W4), self.b4)
         return logits
 
@@ -340,4 +340,5 @@ class LanguageIDModel(object):
                 self.b3.update(gB3, -self.learning_rate)
                 self.W4.update(gW4, -self.learning_rate)
                 self.b4.update(gB4, -self.learning_rate)
+            val_acc = dataset.get_validation_accuracy()
 
