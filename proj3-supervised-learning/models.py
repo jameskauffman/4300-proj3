@@ -242,6 +242,7 @@ class LanguageIDModel(object):
         self.learning_rate = 0.1
         self.h = 400
         self.h2 = 200
+        self.h3 = 50
 
         #input to hidden1
         self.W1 = nn.Parameter(self.num_chars, self.h)
@@ -249,13 +250,18 @@ class LanguageIDModel(object):
         #hidden1 to hidden2
         self.W2 = nn.Parameter(self.h, self.h)
         self.b2 = nn.Parameter(1, self.h)
+        
         #hidden3 to hidden4
         self.W3 = nn.Parameter(self.h, self.h2)
         self.b3 = nn.Parameter(1, self.h2)
         
+        
+        self.W4 = nn.Parameter(self.h2, self.h3)
+        self.b4 = nn.Parameter(1, self.h3)
+        
         #hidden4 to output
-        self.W4 = nn.Parameter(self.h2, 5)
-        self.b4 = nn.Parameter(1, 5)
+        self.W5 = nn.Parameter(self.h3, 5)
+        self.b5 = nn.Parameter(1, 5)
 
         
 
@@ -301,7 +307,9 @@ class LanguageIDModel(object):
             )
                 
         h3 = nn.ReLU(nn.AddBias(nn.Linear(h, self.W3), self.b3))
-        logits = nn.AddBias(nn.Linear(h3, self.W4), self.b4)
+        h4 = nn.ReLU(nn.AddBias(nn.Linear(h3, self.W4), self.b4))
+
+        logits = nn.AddBias(nn.Linear(h4, self.W5), self.b5)
         return logits
 
 
@@ -330,8 +338,8 @@ class LanguageIDModel(object):
         for epoch in range(10):
             for x, y in dataset.iterate_once(self.batch_size):
                 loss = self.get_loss(x, y)
-                gW1, gW2, gB2, gW3, gB3, gW4, gB4 = nn.gradients(
-                    loss, [self.W1, self.W2, self.b2, self.W3, self.b3, self.W4, self.b4]
+                gW1, gW2, gB2, gW3, gB3, gW4, gB4, gW5, gB5 = nn.gradients(
+                    loss, [self.W1, self.W2, self.b2, self.W3, self.b3, self.W4, self.b4, self.W5, self.b5]
                 )
                 self.W1.update(gW1, -self.learning_rate)
                 self.W2.update(gW2, -self.learning_rate)
@@ -340,5 +348,7 @@ class LanguageIDModel(object):
                 self.b3.update(gB3, -self.learning_rate)
                 self.W4.update(gW4, -self.learning_rate)
                 self.b4.update(gB4, -self.learning_rate)
+                self.W5.update(gW5, -self.learning_rate)
+                self.b5.update(gB5, -self.learning_rate)
             val_acc = dataset.get_validation_accuracy()
 
